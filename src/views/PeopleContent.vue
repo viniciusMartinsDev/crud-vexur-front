@@ -1,20 +1,38 @@
 <template>
   <div>
     <form action="" @submit.prevent>
-      <label>Nome: {{ name }}</label>
-      <input type="text" v-model="name" />
-      <label for="">Birth: {{ birth }}</label>
-      <input type="text" v-model="birth" />
-      <span>
-        <button @click="create()">Create</button>
+      <label
+        >Name:
+        <input type="text" v-model="name" />
+      </label>
+      <label
+        >Birth:
+        <input type="date" v-model="birth" />
+      </label>
+      <label
+        >Company:
+        <select v-model="idCompany">
+          <option
+            v-for="company in companies"
+            :key="company.id"
+            :value="company.id"
+          >
+            {{ company.data.company }}
+          </option>
+        </select>
+      </label>
+      <div>
+        <button v-show="showCreateBtn" @click="create()">Create</button>
         <button v-show="showSaveBtn" @click="update(person)">Save</button>
         <button @click="cancel()" id="del">Cancel</button>
-      </span>
+      </div>
     </form>
     <ul>
-      <li v-for="person in people" :key="person.id">
-        <h2>{{ person.data.name }}</h2>
-        <p>{{ person.data.birth }}</p>
+      <li v-for="person in people" :key="person.person.id">
+        <h2>{{ person.person.data.name }}</h2>
+        <p>{{ person.person.data.birth }}</p>
+        <h3>{{ person.company.data.company }}</h3>
+        <p>{{ person.company.data.city }}</p>
         <button @click="edit(person)">Edit</button>
         <button @click="del(person)" id="del">Delete</button>
       </li>
@@ -28,10 +46,13 @@ export default {
   data() {
     return {
       people: [],
+      companies: [],
       name: "",
       birth: "",
       id: "",
+      idCompany: "",
       showSaveBtn: false,
+      showCreateBtn: true,
     };
   },
   created() {
@@ -43,39 +64,61 @@ export default {
         .get("/people")
         .then((res) => {
           this.people = res.data;
+          this.getCompanies();
+        })
+        .catch((error) => console.log(error));
+    },
+    getCompanies() {
+      api
+        .get("/companies")
+        .then((res) => {
+          this.companies = res.data;
         })
         .catch((error) => console.log(error));
     },
     edit(person) {
-      this.name = person.data.name;
-      this.birth = person.data.birth;
-      this.id = person.id;
+      this.showCreateBtn = false;
+      this.name = person.person.data.name;
+      this.birth = person.person.data.birth;
+      this.id = person.person.id;
+      this.idCompany = person.company.id;
       this.showSaveBtn = true;
     },
     cancel() {
+      this.showCreateBtn = true;
       this.name = "";
       this.birth = "";
+      this.idCompany = "";
+      this.id = "";
       this.showSaveBtn = false;
     },
     async update() {
       await api.put(`/people/${this.id}`, {
         name: this.name,
         birth: this.birth,
+        idCompany: this.idCompany,
       });
       this.name = "";
       this.birth = "";
+      this.idCompany = "";
       this.showSaveBtn = false;
+      this.showCreateBtn = true;
       this.getPeople();
     },
     async create() {
-      await api.post("people", { name: this.name, birth: this.birth });
+      await api.post("/people", {
+        name: this.name,
+        birth: this.birth,
+        idCompany: this.idCompany,
+      });
       this.name = "";
       this.birth = "";
+      this.idCompany = "";
       this.showSaveBtn = false;
       this.getPeople();
     },
     async del(person) {
-      await api.delete(`/people/${person.id}`);
+      await api.delete(`/people/${person.person.id}`);
       this.getPeople();
     },
   },
@@ -96,13 +139,34 @@ form {
   align-items: center;
 }
 
-form span {
+form div {
   margin-bottom: 32px;
+  width: 250px;
+}
+
+form label {
+  width: 250px;
 }
 
 /* Estilos para os campos de entrada de texto */
 input[type="text"] {
   padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+input[type="date"] {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+select {
+  padding: 4px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
